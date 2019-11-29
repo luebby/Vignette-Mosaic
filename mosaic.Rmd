@@ -6,6 +6,8 @@ output:
   pdf_document:
     fig_height: 3
     fig_width: 5
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, setup, include=FALSE}
@@ -20,7 +22,9 @@ Dies Vignette dient ausschließlich als Beispielsammlung für die Analyse von Fr
 
 # Datenbeschreibung
 
-Hintergrund: Gibt es Unterschiede bzw. Zusammenhänge zwischen den Persönlichkeitsmerkmal *Gewissenhaftigkeit*, der Selbsteinschätzung der *Kompetenz* für das Fach Statistik, der *Notenerwartung* sowie eines Aspektes des *Wissens* (öknomisch-statistischer Bezug). Als demographische Faktoren werden *Alter* und *Geschlecht* berücksichtigt.
+## Hintergrund
+
+Gibt es Unterschiede bzw. Zusammenhänge zwischen den Persönlichkeitsmerkmal *Gewissenhaftigkeit*, der Selbsteinschätzung der *Kompetenz* für das Fach Statistik, der *Notenerwartung* sowie eines Aspektes des *Wissens* (öknomisch-statistischer Bezug). Als demographische Faktoren werden *Alter* und *Geschlecht* berücksichtigt.
 
 ## Studiendesign
 
@@ -33,7 +37,6 @@ Hintergrund: Gibt es Unterschiede bzw. Zusammenhänge zwischen den Persönlichke
   
   > Wie sehr stimmen Sie der folgenden Aussage zu: "Die Anlage in Aktien eines einzelnen Unternehmens ist generell weniger riskant als die Anlage in einem Fonds mit Aktien verschiedener Unternehmen".
   
-
 
 Daten einlesen:
 
@@ -65,11 +68,6 @@ GKNW <- GKNW %>%
   na.omit() 
 ```
 
-Kontrolle:
-
-```{r}
-inspect(GKNW)
-```
 
 # Analyse eines Anteilswertes
 
@@ -104,9 +102,53 @@ set.seed(1896)
 Bootvtlg <- do(1000) * prop( ~ F07_Aktien, success = "richtig", 
                                            data = resample(GKNW))
 gf_histogram( ~ prop_richtig, data = Bootvtlg, bins = 21, center = p_stipro) %>%
-  gf_labs(title = "Bootstrap Verteilung Anteil richtig")
+  gf_labs(title = "Bootstrap Verteilung Anteil richtig") 
 confint(Bootvtlg)
 ```
+
+Es gab fünf Antwortalternativen, d.h. die für die Rateerfolgswahrscheinlichkeit gilt: $\pi=1/5$, bei $n=`r nrow(GKNW)`$ Beobachtungen.
+
+```{r}
+set.seed(1896)
+n <- nrow(GKNW)
+Nullvtlg <- do(1000) * rflip(n = n, prob = 1/5)
+gf_histogram( ~ prop, data = Nullvtlg, bins = 21, center = 1/5) %>%
+  gf_labs(title = "Verteilung Anteil richtig im Modell 'Raten'") %>%
+  gf_vline(xintercept = ~ p_stipro)
+prop( ~ prop >= p_stipro, data = Nullvtlg)
+```
+
+### Klassisch
+
+```{r}
+binom.test( ~ F07_Aktien, success = "richtig", 
+            p = 1/5, alternative = "greater",
+            data = GKNW )
+```
+
+*Hinweis*: Bei einer gerichteten Hypothese (hier: $H_A: \pi>1/5$) wird das einseitige Konfidenzintervall ausgegben.
+
+## Antwort
+
+- In der Stichprobe liegt der Anteil richtiger Antworten bei $p=`r round(p_stipro, 2)`$.
+- Das $95\%$-Konfidenzintervall für $\pi$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$
+- Der p-Wert unter $H_0: \pi \leq 1/5$ ist $<`r tally( ~ prop >= p_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$
+
+# Analyse eines Mittelwertes
+
+# Vergleich zweier Anteilswerte
+
+# Vergleich zweier Mittelwerte
+
+# Vergleich von zwei oder mehr Anteilswerten
+
+# Vergleich von zwei oder mehr Mittelwerten
+
+# Lineare Regression
+
+# Logistische Regression
+
+
 
 
 # Versionshinweise
