@@ -38,6 +38,8 @@ Gibt es Unterschiede bzw. Zusammenhänge zwischen den Persönlichkeitsmerkmal *G
   > Wie sehr stimmen Sie der folgenden Aussage zu: "Die Anlage in Aktien eines einzelnen Unternehmens ist generell weniger riskant als die Anlage in einem Fonds mit Aktien verschiedener Unternehmen".
   
 
+**Hinweis**: Aufgrund des Designs als Gelegeneitsstichprobe in verschiedenen Kursen sind verzerrende Kovariablen, z.B. Studiengang möglich, die Validität der Ergebnisse ist daher eingeschränkt!
+
 Daten einlesen:
 
 ```{r}
@@ -66,6 +68,13 @@ GKNW <- GKNW %>%
                                 TRUE ~ "falsch")) %>%
   mutate(G02_Alter = cut(G02_Alter, c(18,23,28,33))) %>%
   na.omit() 
+```
+
+Anzahl Beobachtungen nach Datenvorverarbeitung:
+
+```{r}
+n <- nrow(GKNW)
+n
 ```
 
 
@@ -112,7 +121,6 @@ Einfache Simulation:
 
 ```{r}
 set.seed(1896)
-n <- nrow(GKNW)
 Nullvtlg <- do(1000) * rflip(n = n, prob = 1/5)
 gf_histogram( ~ prop, data = Nullvtlg, bins = 21, center = 1/5) %>%
   gf_labs(title = "Verteilung Anteil richtig im Modell 'Raten'") %>%
@@ -137,6 +145,71 @@ binom.test( ~ F07_Aktien, success = "richtig",
 - Der p-Wert unter $H_0: \pi \leq 1/5$ ist $<`r tally( ~ prop >= p_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
 
 # Analyse eines Mittelwertes
+
+
+## Fragestellung
+
+Wie hoch ist die Selbsteinschätzung der kognitiven Kompetenz bezüglich des Fachs Statistik?
+
+## Grafische Analyse
+
+```{r}
+gf_histogram(~ B_SATS_Kompetenz, data = GKNW,
+             center = 4, binwidth = 0.5) %>%
+    gf_labs(title="SATS-36",
+            x="Kognitive Kompetenz", y="Häufigkeit") 
+```
+
+## Kennzahlen
+
+```{r}
+favstats(~ B_SATS_Kompetenz, data = GKNW)
+```
+
+```{r}
+mean_stipro <- mean(~ B_SATS_Kompetenz, data = GKNW)
+mean_stipro
+sd_stipro <- sd(~ B_SATS_Kompetenz, data = GKNW)
+sd_stipro
+```
+
+## Inferenz
+
+### Simulationsbasiert
+
+Bootstrap Konfidenzintervall für den Mittelwert:
+
+```{r}
+set.seed(1896)
+Bootvtlg <- do(1000) * mean(~ B_SATS_Kompetenz, data = resample(GKNW))
+gf_histogram( ~ mean, data = Bootvtlg, bins = 21, center = mean_stipro) %>%
+  gf_labs(title = "Bootstrap Verteilung Mittelwert") 
+confint(Bootvtlg)
+```
+
+Der neutrale Wert der 7-er Multi-Item Likert Skala liegt bei $\mu=4$. Zusätzlich: Annahme einer Normalverteilung und Verwendung der geschätzten Standardabweichung $\hat{\sigma} = `r round(sd_stipro, 2)$.
+
+```{r}
+set.seed(1896)
+Nullvtlg <- do(1000) * mean( ~ rnorm(n = n, mean = 4, sd = sd_stipro))
+gf_histogram( ~ mean, data = Nullvtlg, bins = 21, center = 4) %>%
+  gf_labs(title = "Verteilung Mittelwert im Modell 'Neutral'") %>%
+  gf_vline(xintercept = ~ mean_stipro)
+diff_stipro <- abs(mean_stipro - 4)
+prop( ~ (abs(mean-4)) >= diff_stipro, data = Nullvtlg)
+```
+
+### Klassisch
+
+```{r}
+t.test( ~ B_SATS_Kompetenz, data = GKNW, mu=4)
+```
+
+## Antwort
+
+- In der Stichprobe liegt der Mittelwert der eingeschätzten Kompetenz bei  $\bar{x}=`r round(mean_stipro, 2)`$ bei einer Standardabweichung von $sd=`r round(sd_stipro, 2)`$.
+- Das $95\%$-Konfidenzintervall für $\pi$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
+- Der p-Wert unter $H_0: \mu =4$ ist $<`r tally( ~ (abs(mean-4)) >= diff_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
 
 # Vergleich zweier Anteilswerte
 
