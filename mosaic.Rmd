@@ -108,6 +108,8 @@ confint(Bootvtlg)
 
 Es gab fünf Antwortalternativen, d.h. die für die Rateerfolgswahrscheinlichkeit gilt: $\pi=1/5$, bei $n=`r nrow(GKNW)`$ Beobachtungen.
 
+Einfache Simulation:
+
 ```{r}
 set.seed(1896)
 n <- nrow(GKNW)
@@ -131,8 +133,8 @@ binom.test( ~ F07_Aktien, success = "richtig",
 ## Antwort
 
 - In der Stichprobe liegt der Anteil richtiger Antworten bei $p=`r round(p_stipro, 2)`$.
-- Das $95\%$-Konfidenzintervall für $\pi$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$
-- Der p-Wert unter $H_0: \pi \leq 1/5$ ist $<`r tally( ~ prop >= p_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$
+- Das $95\%$-Konfidenzintervall für $\pi$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
+- Der p-Wert unter $H_0: \pi \leq 1/5$ ist $<`r tally( ~ prop >= p_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
 
 # Analyse eines Mittelwertes
 
