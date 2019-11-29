@@ -9,82 +9,105 @@ output:
 ---
 
 ```{r, setup, include=FALSE}
-library(mosaic)   # Load additional packages here 
-
 # Some customization.  You can alter or delete as desired (if you know what you are doing).
-trellis.par.set(theme=theme.mosaic()) # change default color scheme for lattice
 knitr::opts_chunk$set(
-  tidy=FALSE,     # display code as typed
   size="small")   # slightly smaller font for code
 ```
 
 # Vorbemerkungen
 
-# Daten einlesen und vorverarbeiten
+Dies Vignette dient ausschließlich als Beispielsammlung für die Analyse von Fragestellungen mit `R` `mosaic`. Sie kann und soll kein Lehrbuch für Statistik oder R ersetzen.
 
-# Analyse einer kategorialen Variable
+# Datenbeschreibung
 
-## Grafisch
+Hintergrund: Gibt es Unterschiede bzw. Zusammenhänge zwischen den Persönlichkeitsmerkmal *Gewissenhaftigkeit*, der Selbsteinschätzung der *Kompetenz* für das Fach Statistik, der *Notenerwartung* sowie eines Aspektes des *Wissens* (öknomisch-statistischer Bezug). Als demographische Faktoren werden *Alter* und *Geschlecht* berücksichtigt.
+
+## Studiendesign
+
+- Gelegeneitsstichprobe: freiwillige Online Umfrage vor Semesterbeginn an mehreren FOM Standorten in Vorlesungen mit statistischem Bezug.
+- Operationalisierung:
+  - *Gewissenhaftigkeit* (`D_BFI_G`): Rammstedt, B., Kemper, C. J., Klein, M. C., Beierlein, C. & Kovaleva, A., (2014). *Big Five Inventory (BFI-10)*. Zusammenstellung sozialwissenschaftlicher Items und Skalen. 
+  - *Kompetenz* (`B_SATS_Kompetenz`): Schau, C. (2003), *Survey of Attitudes Toward Statistics (SATS-36)*
+  - *Notenerwartung* (`C4_Notenerwartung`): Welche Note erwarten Sie in diesem Kurs?
+  - *Wissen*. (`F07_Aktien`): briq-Institut und DIE ZEIT; Altmann, S., Falk, A., Heuser, U.J. & Radbruch, J. (2018). Was wissen die Deutschen über Wirtschaft? 
+  
+  > Wie sehr stimmen Sie der folgenden Aussage zu: "Die Anlage in Aktien eines einzelnen Unternehmens ist generell weniger riskant als die Anlage in einem Fonds mit Aktien verschiedener Unternehmen".
+  
+
+
+Daten einlesen:
+
+```{r}
+GKNW <- read.csv2("Datenbasis_SATS_BFI.csv")
+```
+
+Vorbereitung:
+```{r, message=FALSE}
+library(mosaic)
+```
+
+Erste Übersicht:
+```{r}
+inspect(GKNW)
+```
+
+# Datenvorverarbeitung
+
+- Richtige Antwort auf `F07_Aktien` markieren
+- Alter gruppieren
+- Beobachtungen mit fehlende Werte eleminieren
+
+```{r}
+GKNW <- GKNW %>%
+  mutate(F07_Aktien = case_when(F07_Aktien == "Stimme ganz und gar nicht zu." ~ "richtig",
+                                TRUE ~ "falsch")) %>%
+  mutate(G02_Alter = cut(G02_Alter, c(18,23,28,33))) %>%
+  na.omit() 
+```
+
+Kontrolle:
+
+```{r}
+inspect(GKNW)
+```
+
+# Analyse eines Anteilswertes
+
+## Fragestellung
+
+Wie hoch ist der Anteil derjenigen, die die Wissensfrage richtig beantworten konnten?
+
+## Grafische Analyse
+
+```{r}
+gf_bar( ~ F07_Aktien, data = GKNW) %>%
+  gf_labs(title="Öknomisches Wissensfrage",
+  x="Antwort", y="Häufigkeit") 
+```
 
 ## Kennzahlen
 
-## Inferenz
-
-### Simulationsbasiert
-
-### Klassisch
-
-# Analyse einer numerischen Variable
-
-## Grafisch
-
-## Kennzahlen
+```{r}
+tally( ~ F07_Aktien, data = GKNW)
+p_stipro <- prop( ~ F07_Aktien, success = "richtig", data = GKNW)
+p_stipro
+```
 
 ## Inferenz
 
-### Simulationsbasiert
+### Simulationbasiert
 
-### Klassisch
+Bootstrap-Konfidenzintervall:
 
-# Zwei Gruppen Vergleich - kategorial
+```{r}
+set.seed(1896)
+Bootvtlg <- do(1000) * prop( ~ F07_Aktien, success = "richtig", 
+                                           data = resample(GKNW))
+gf_histogram( ~ prop_richtig, data = Bootvtlg, bins = 21, center = p_stipro) %>%
+  gf_labs(title = "Bootstrap Verteilung Anteil richtig")
+confint(Bootvtlg)
+```
 
-## Grafisch
-
-## Kennzahlen
-
-## Inferenz
-
-### Simulationsbasiert
-
-### Klassisch
-
-# Zwei Gruppen Vergleich - numerisch
-
-## Grafisch
-
-## Kennzahlen
-
-## Inferenz
-
-### Simulationsbasiert
-
-### Klassisch
-
-# Analyse zweier numerischer Variablen
-
-## Grafisch
-
-## Kennzahlen
-
-## Inferenz
-
-### Simulationsbasiert
-
-### Klassisch
-
-# Lineare Regression
-
-# Logistiche Regression
 
 # Versionshinweise
 
