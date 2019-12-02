@@ -239,10 +239,10 @@ gf_bar( ~ G01_Geschlecht, fill = ~ F07_Aktien, position = "fill",
 tally(F07_Aktien ~ G01_Geschlecht, data = GKNW)
 tally(F07_Aktien ~ G01_Geschlecht, format = "proportion",
       data = GKNW)
-prop_stipro <- prop(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
-prop_stipro
-diff_stipro <-diffprop(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
-diff_stipro
+p_stipro <- prop(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
+p_stipro
+diffp_stipro <-diffprop(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
+diffp_stipro
 ```
 
 ## Inferenz
@@ -255,7 +255,7 @@ Bootstrap Konfidenzintervall:
 set.seed(1896)
 Bootvtlg <- do(1000) * diffprop(F07_Aktien ~ G01_Geschlecht, success = "richtig", 
                                            data = resample(GKNW))
-gf_histogram( ~ diffprop, data = Bootvtlg, bins = 21, center = diff_stipro) %>%
+gf_histogram( ~ diffprop, data = Bootvtlg, bins = 21, center = diffp_stipro) %>%
   gf_labs(title = "Bootstrap Verteilung Differenz Anteil richtig") 
 confint(Bootvtlg)
 ```
@@ -268,9 +268,9 @@ Nullvtlg <- do(1000) * diffprop(F07_Aktien ~ shuffle(G01_Geschlecht),
                                 success = "richtig", data = GKNW)
 gf_histogram( ~ diffprop, data = Nullvtlg, bins = 21, center = 0) %>%
   gf_labs(title = "Permutationsverteilung Differenz Anteil richtig") %>%
-  gf_vline(xintercept = ~ diff_stipro)
+  gf_vline(xintercept = ~ diffp_stipro)
 
-prop( ~ (abs(diffprop) >= abs(diff_stipro)), data = Nullvtlg)
+prop( ~ (abs(diffprop) >= abs(diffp_stipro)), data = Nullvtlg)
 ```
 
 ### Klassisch
