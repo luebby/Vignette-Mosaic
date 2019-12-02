@@ -142,10 +142,10 @@ binom.test( ~ F07_Aktien, success = "richtig",
 
 - In der Stichprobe liegt der Anteil richtiger Antworten bei $p=`r round(p_stipro, 2)`$.
 - Das $95\%$-Konfidenzintervall für $\pi$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
-- Der p-Wert unter $H_0: \pi \leq 1/5$ ist $<`r tally( ~ prop >= p_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
+- Der p-Wert unter $H_0: \pi \leq 1/5$ ist $\leq `r tally( ~ prop >= p_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
+
 
 # Analyse eines Mittelwertes
-
 
 ## Fragestellung
 
@@ -209,9 +209,90 @@ t.test( ~ B_SATS_Kompetenz, data = GKNW, mu=4)
 
 - In der Stichprobe liegt der Mittelwert der eingeschätzten Kompetenz bei  $\bar{x}=`r round(mean_stipro, 2)`$ bei einer Standardabweichung von $sd=`r round(sd_stipro, 2)`$.
 - Das $95\%$-Konfidenzintervall für $\pi$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
-- Der p-Wert unter $H_0: \mu =4$ ist $<`r tally( ~ (abs(mean-4)) >= diff_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
+- Der p-Wert unter $H_0: \mu =4$ ist $\leq `r tally( ~ (abs(mean-4)) >= diff_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
+
 
 # Vergleich zweier Anteilswerte
+
+## Fragestellung
+
+Unterscheidet sich der Anteil der richtigen Antworten auf die ökonomische Frage zwischen Männern und Frauen?
+
+## Grafische Analyse
+
+```{r}
+gf_bar( ~ F07_Aktien | ~ G01_Geschlecht, data = GKNW)  %>%
+  gf_labs(title="Öknomisches Wissensfrage",
+  x="Antwort", y="Häufigkeit") 
+```
+
+```{r}
+gf_bar( ~ G01_Geschlecht, fill = ~ F07_Aktien, position = "fill",
+        data = GKNW)  %>%
+  gf_labs(title="Öknomisches Wissensfrage",
+  x="Geschlecht", y="Anteil richtig/falsch") 
+```
+
+## Kennzahlen
+
+```{r}
+tally(F07_Aktien ~ G01_Geschlecht, data = GKNW)
+tally(F07_Aktien ~ G01_Geschlecht, format = "proportion",
+      data = GKNW)
+prop_stipro <- prop(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
+prop_stipro
+diff_stipro <-diffprop(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
+diff_stipro
+```
+
+## Inferenz
+
+### Simulationsbasiert
+
+Bootstrap Konfidenzintervall:
+
+```{r}
+set.seed(1896)
+Bootvtlg <- do(1000) * diffprop(F07_Aktien ~ G01_Geschlecht, success = "richtig", 
+                                           data = resample(GKNW))
+gf_histogram( ~ diffprop, data = Bootvtlg, bins = 21, center = diff_stipro) %>%
+  gf_labs(title = "Bootstrap Verteilung Differenz Anteil richtig") 
+confint(Bootvtlg)
+```
+
+Permutationsverteilung unter $H_0: F_{\text{maennlich}}=F_{\text{weiblich}}$:
+
+```{r}
+set.seed(1896)
+Nullvtlg <- do(1000) * diffprop(F07_Aktien ~ shuffle(G01_Geschlecht), 
+                                success = "richtig", data = GKNW)
+gf_histogram( ~ diffprop, data = Nullvtlg, bins = 21, center = 0) %>%
+  gf_labs(title = "Permutationsverteilung Differenz Anteil richtig") %>%
+  gf_vline(xintercept = ~ diff_stipro)
+
+prop( ~ (abs(diffprop) >= abs(diff_stipro)), data = Nullvtlg)
+```
+
+### Klassisch
+
+```{r}
+prop.test(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
+```
+
+*Hinweis:* Anders als bei `diffprop()` bezieht sich hier das Konfidenzintervall auf $\pi_{\text{maennlich}}-\pi_{\text{weiblich}}$.
+
+## Antwort
+
+**Hinweis**: Neben den Validitätsproblem einer Gelegenheitsstichprobe ist hier zu beachten, dass das öknomische Wissen nur durch eine einzelne finanzwissenschaftliche Fragestellung mit der Forumulierung der richtigen Antwort 
+
+> Stimme ganz und gar nicht zu.
+
+auf einer Likert-Skala Operationalisiert wurde.
+
+- In der Stichprobe liegt der Anteil richtiger Antworten bei $p_{\text{maennlich}}=`r round(p_stipro[1], 2)`$ und $p_{\text{weiblich}}=`r round(p_stipro[2], 2)`$.
+- Das $95\%$-Konfidenzintervall für $\pi_{\text{weiblich}}-_{\text{maennlich}}$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
+- Der p-Wert unter $H_0: \pi_{\text{weiblich}}-\pi_{\text{maennlich}}=0 \Leftrightarrow \pi_{\text{weiblich}}=\pi_{\text{maennlich}}$ ist $\leq `r tally( ~ (abs(diffprop) >= abs(diff_stipro)), data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
+
 
 # Vergleich zweier Mittelwerte
 
