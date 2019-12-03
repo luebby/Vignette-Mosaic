@@ -6,6 +6,7 @@ output:
   pdf_document:
     fig_height: 3
     fig_width: 5
+    toc: yes
 editor_options: 
   chunk_output_type: console
 ---
@@ -144,6 +145,7 @@ binom.test( ~ F07_Aktien, success = "richtig",
 - Das $95\%$-Konfidenzintervall für $\pi$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
 - Der p-Wert unter $H_0: \pi \leq 1/5$ ist $\leq `r tally( ~ prop >= p_stipro, data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
 
+*Hinweis*: In der Studie von DIE ZEIT lag der Anteil der richtigen Antworten bei $33\%$.
 
 # Analyse eines Mittelwertes
 
@@ -283,18 +285,89 @@ prop.test(F07_Aktien ~ G01_Geschlecht, success = "richtig", data = GKNW)
 
 ## Antwort
 
+
+- In der Stichprobe liegt der Anteil richtiger Antworten bei $p_{\text{maennlich}}=`r round(p_stipro[1], 2)`$ und $p_{\text{weiblich}}=`r round(p_stipro[2], 2)`$.
+- Das $95\%$-Konfidenzintervall für $\pi_{\text{weiblich}}-\pi_{\text{maennlich}}$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
+- Der p-Wert unter $H_0: \pi_{\text{weiblich}}-\pi_{\text{maennlich}}=0 \Leftrightarrow \pi_{\text{weiblich}}=\pi_{\text{maennlich}}$ ist $\leq `r tally( ~ (abs(diffprop) >= abs(diff_stipro)), data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
+
 **Hinweis**: Neben den Validitätsproblem einer Gelegenheitsstichprobe ist hier zu beachten, dass das öknomische Wissen nur durch eine einzelne finanzwissenschaftliche Fragestellung mit der Forumulierung der richtigen Antwort 
 
 > Stimme ganz und gar nicht zu.
 
 auf einer Likert-Skala Operationalisiert wurde.
 
-- In der Stichprobe liegt der Anteil richtiger Antworten bei $p_{\text{maennlich}}=`r round(p_stipro[1], 2)`$ und $p_{\text{weiblich}}=`r round(p_stipro[2], 2)`$.
-- Das $95\%$-Konfidenzintervall für $\pi_{\text{weiblich}}-_{\text{maennlich}}$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
-- Der p-Wert unter $H_0: \pi_{\text{weiblich}}-\pi_{\text{maennlich}}=0 \Leftrightarrow \pi_{\text{weiblich}}=\pi_{\text{maennlich}}$ ist $\leq `r tally( ~ (abs(diffprop) >= abs(diff_stipro)), data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
-
-
 # Vergleich zweier Mittelwerte
+
+## Fragestellung
+
+Haben diejenigen, die die (finanzwissenschaftliche) ökonomische Frage richtig beantwortet haben eine höhere Selbsteinschätzung der kognitiven Kompetenz bezüglich des Fachs Statistik?
+
+## Grafisch
+
+```{r, message=FALSE}
+gf_boxplot(B_SATS_Kompetenz ~ F07_Aktien, data = GKNW) %>%
+  gf_labs(title="SATS-36 und Öknomisches Wissensfrage",
+          x="Öknomisches Wissensfrage", y="Kognitive Kompetenz") 
+
+gf_violin(B_SATS_Kompetenz ~ F07_Aktien, data = GKNW) %>%
+  gf_point(size = 3, stat = "summary") %>% 
+  gf_labs(title="SATS-36 und Öknomisches Wissensfrage",
+          x="Öknomisches Wissensfrage", y="Kognitive Kompetenz") 
+```
+
+## Kennzahlen
+
+```{r}
+favstats(B_SATS_Kompetenz ~ F07_Aktien, data = GKNW)
+mean_stipro <- mean(B_SATS_Kompetenz ~ F07_Aktien, data = GKNW)
+mean_stipro
+diffmean_stipro <-diffmean(B_SATS_Kompetenz ~ F07_Aktien, data = GKNW)
+diffmean_stipro
+```
+
+## Inferenz
+
+### Simulationsbasiert
+
+Bootstrap Konfidenzintervall:
+
+```{r}
+set.seed(1896)
+Bootvtlg <- do(1000) * diffmean(B_SATS_Kompetenz ~ F07_Aktien, 
+                                           data = resample(GKNW))
+gf_histogram( ~ diffmean, data = Bootvtlg, bins = 21, center = diffmean_stipro) %>%
+  gf_labs(title = "Bootstrap Verteilung Differenz Mittelwert Kompetenz") 
+confint(Bootvtlg)
+```
+
+Permutationsverteilung unter $H_0: F_{\text{richtig}}=F_{\text{falsch}}$:
+
+```{r}
+set.seed(1896)
+Nullvtlg <- do(1000) * diffmean(B_SATS_Kompetenz ~ shuffle(F07_Aktien), 
+                                data = GKNW)
+gf_histogram( ~ diffmean, data = Nullvtlg, bins = 21, center = 0) %>%
+  gf_labs(title = "Permutationsverteilung Differenz Mittelwert Kompetenz") %>%
+  gf_vline(xintercept = ~ diffmean_stipro)
+
+prop( ~ (diffmean >= diffmean_stipro), data = Nullvtlg)
+```
+
+### Klassisch
+
+```{r}
+t.test(B_SATS_Kompetenz ~ F07_Aktien, alternative = "less",
+       data = GKNW)
+```
+
+*Hinweis:* Anders als bei `diffmean()` bezieht sich hier das (einseitige) Konfidenzintervall auf $\mu_{\text{falsch}}-\mu_{\text{richtig}}$ und $H_0: \mu_{\text{falsch}} \geq \mu_{\text{richtig}} \Leftrightarrow \mu_{\text{falsch}} - \mu_{\text{richtig}} \geq 0$.
+
+## Antwort
+
+
+- In der Stichprobe liegt der Mittelwert der Selbsteinschätzung der kognitiven Kompetenz bei $\bar{x}_{\text{falsch}}=`r round(mean_stipro[1], 2)`$ und $\bar{x}_{\text{richtig}}=`r round(mean_stipro[2], 2)`$.
+- Das $95\%$-Konfidenzintervall für $\mu_{\text{richtig}}-\mu_{\text{falsch}}$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
+- Der p-Wert unter $H_0: \mu_{\text{richtig}}-\mu_{\text{falsch}} \leq 0 \Leftrightarrow \mu_{\text{richtig}} \leq \mu_{\text{falsch}}$ ist $`r prop( ~ (diffmean >= diffmean_stipro), data = Nullvtlg)`$.
 
 # Vergleich von zwei oder mehr Anteilswerten
 
@@ -305,7 +378,13 @@ auf einer Likert-Skala Operationalisiert wurde.
 # Logistische Regression
 
 
+# Hinweise
 
+Weitere Hinweise:
+
+- `dplyr`: [https://dplyr.tidyverse.org/](https://dplyr.tidyverse.org/)
+- `mosaic`: [https://projectmosaic.github.io/mosaic/](https://projectmosaic.github.io/mosaic/)
+- `ggformula`: [https://projectmosaic.github.io/ggformula/](https://projectmosaic.github.io/ggformula/)
 
 # Versionshinweise
 
