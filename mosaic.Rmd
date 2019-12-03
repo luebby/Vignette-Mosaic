@@ -437,6 +437,68 @@ prop( ~ (X.squared >= X.squared_stipro), data = Nullvtlg)
 
 # Vergleich von zwei oder mehr Mittelwerten
 
+## Fragestellung
+
+Unterscheidet sich die Selbsteinschätzung der kognitiven Kompetenz bezüglich des Fachs Statistik zwischen den Altersklassen?
+
+## Grafische Analyse
+
+```{r, message=FALSE}
+gf_boxplot(B_SATS_Kompetenz ~ G02_Alter, data = GKNW) %>%
+  gf_labs(title="SATS-36 und Alter",
+          x="Alter", y="Kognitive Kompetenz") 
+
+gf_violin(B_SATS_Kompetenz ~ G02_Alter, data = GKNW) %>%
+  gf_point(size = 3, stat = "summary") %>% 
+  gf_labs(title="SATS-36 und Alter",
+          x="Alter", y="Kognitive Kompetenz") 
+```
+
+
+## Kennzahlen
+
+```{r}
+favstats(B_SATS_Kompetenz ~ G02_Alter, data = GKNW)
+mean_stipro <- mean(B_SATS_Kompetenz ~ G02_Alter, data = GKNW)
+mean_stipro
+```
+
+## Inferenz
+
+### Klassisch
+
+```{r}
+erg_lm <- lm(B_SATS_Kompetenz ~ G02_Alter, data = GKNW)
+library(car)
+Anova(erg_lm)
+```
+
+*Hinweis*: die Funktion `Anova()` aus dem Paket `car` berechnet anders als die Funktion `aov()` einen marginalen (Typ-II) Test, `aov()` einen sequentiellen (Typ-I) Test.
+
+### Simulationsbasiert
+
+Permutationsverteilung unter $H_0: F_{(18,23]}=F_{(23,28]}=F_{(28,33]}$:
+
+```{r}
+F_stipro <- (do(1) * lm(B_SATS_Kompetenz ~ G02_Alter, data = GKNW))$F
+F_stipro
+set.seed(1896)
+Nullvtlg <- do(1000) * lm(B_SATS_Kompetenz ~ shuffle(G02_Alter), data = GKNW)
+gf_histogram( ~ F, data = Nullvtlg, bins = 21, center = 0) %>%
+  gf_labs(title = "Permutationsverteilung F") %>%
+  gf_vline(xintercept = ~ F_stipro)
+
+prop( ~ (F >= F_stipro), data = Nullvtlg)
+```
+
+
+## Antwort
+
+
+- In der Stichprobe liegen die Mittelwerte der Selbsteinschätzung der kognitiven Kompetenz bei $\bar{x}_{(18,23]}=`r round(mean_stipro[1], 2)`, \bar{x}_{(23,28]}=`r round(mean_stipro[2], 2)`$ und $\bar{x}_{(23,33]}=`r round(mean_stipro[3], 2)`$.
+- Der p-Wert unter $H_0: \mu_{(18,23]}=\mu_{(23,28]}=\mu_{(28,33]}$ ist $`r prop( ~ (F >= F_stipro), data = Nullvtlg)`$.
+
+
 # Lineare Regression
 
 # Logistische Regression
