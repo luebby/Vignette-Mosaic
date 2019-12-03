@@ -369,7 +369,71 @@ t.test(B_SATS_Kompetenz ~ F07_Aktien, alternative = "less",
 - Das $95\%$-Konfidenzintervall für $\mu_{\text{richtig}}-\mu_{\text{falsch}}$ überdeckt den Bereich $`r floor(confint(Bootvtlg)$lower*100)/100`$ bis $`r ceiling(confint(Bootvtlg)$upper*100)/100`$.
 - Der p-Wert unter $H_0: \mu_{\text{richtig}}-\mu_{\text{falsch}} \leq 0 \Leftrightarrow \mu_{\text{richtig}} \leq \mu_{\text{falsch}}$ ist $`r prop( ~ (diffmean >= diffmean_stipro), data = Nullvtlg)`$.
 
+
 # Vergleich von zwei oder mehr Anteilswerten
+
+## Fragestellung
+
+Unterscheidet sich der Anteil der richtigen Antworten auf die ökonomische Frage zwischen den Altersklassen?
+
+## Grafische Analyse
+
+```{r}
+gf_bar( ~ F07_Aktien | ~  G02_Alter, data = GKNW)  %>%
+  gf_labs(title="Öknomisches Wissensfrage",
+  x="Antwort", y="Häufigkeit") 
+```
+
+```{r}
+gf_bar( ~  G02_Alter, fill = ~ F07_Aktien, position = "fill",
+        data = GKNW)  %>%
+  gf_labs(title="Öknomisches Wissensfrage",
+  x="Altersklasse", y="Anteil richtig/falsch") 
+```
+
+## Kennzahlen
+
+```{r}
+tally(F07_Aktien ~ G02_Alter, data = GKNW)
+tally(F07_Aktien ~ G02_Alter, format = "proportion",
+      data = GKNW)
+p_stipro <- prop(F07_Aktien ~ G02_Alter, success = "richtig", data = GKNW)
+p_stipro
+```
+
+## Inferenz
+
+### Klassisch
+
+```{r}
+xchisq.test(F07_Aktien ~ G02_Alter, data = GKNW)
+```
+
+
+### Simulationsbasiert
+
+Permutationsverteilung unter $H_0: F_{(18,23]}=F_{(23,28]}=F_{(28,33]}$:
+
+```{r}
+X.squared_stipro <- chisq.test(tally(F07_Aktien ~ G02_Alter, data = GKNW))$statistic
+X.squared_stipro
+set.seed(1896)
+Nullvtlg <- do(1000) * chisq.test(tally(F07_Aktien ~ shuffle(G02_Alter), 
+                                        data = GKNW))$statistic
+gf_histogram( ~ X.squared, data = Nullvtlg, bins = 21, center = 0) %>%
+  gf_labs(title = "Permutationsverteilung Chi-Quadrat") %>%
+  gf_vline(xintercept = ~ X.squared_stipro)
+
+prop( ~ (X.squared >= X.squared_stipro), data = Nullvtlg)
+```
+
+
+## Antwort
+
+
+- In der Stichprobe liegt der Anteil richtiger Antworten bei $p_{(18,23]}=`r round(p_stipro[1], 2)`, p_{(23,28]}=`r round(p_stipro[2], 2)`$ und $p_{(23,33]}=`r round(p_stipro[3], 2)`$.
+- Der p-Wert unter $H_0: \pi_{(18,23]}=\pi_{(23,28]}=\pi_{(28,33]}$ ist $`r prop( ~ (X.squared >= X.squared_stipro), data = Nullvtlg)`$.
+
 
 # Vergleich von zwei oder mehr Mittelwerten
 
