@@ -572,7 +572,7 @@ $$\widehat{\text{Notenerwartung}}=`r round(coef(lm_stipro)[1],2)`  `r round(coef
 
 - Der p-Wert unter $H_0: \beta_{\text{Eingeschätzte Kompetenz}}=0$ ist $\leq `r tally(  ~ (abs(B_SATS_Kompetenz) >= abs(beta_stipro)), data = Nullvtlg)[1]+1`/`r nrow(Nullvtlg)`$.
 
-# Logistische Regression
+*Hinweis*: Im Regressionsmodell können Kovariablen etc. berücksichtigt werden und viele Inferenzmethoden lassen sich integrieren: [https://lindeloev.github.io/tests-as-linear/](https://lindeloev.github.io/tests-as-linear/)
 
 
 # Hinweise
